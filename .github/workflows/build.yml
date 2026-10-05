@@ -47,6 +47,7 @@ jobs:
 
     # 3. 使用响应文件编译解决方案
     - name: Build Windows Client (Release x64)
+      shell: cmd
       run: |
         msbuild client_on_windows/ReverseShell.sln @msbuild_options.rsp
 
