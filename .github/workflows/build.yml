@@ -15,7 +15,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 1. 安装 OpenSSL 依赖 (针对 x74 架构)
+    # 1. 安装 OpenSSL 依赖 (针对 x64 架构)
     # 如果你编译的是 x86，请把下面的 x64-windows 改为 x86-windows
     - name: Install OpenSSL via vcpkg
       run: |
@@ -33,23 +33,15 @@ jobs:
       run: |
         nuget restore client_on_windows/ReverseShell.sln
 
-    # 2. 生成响应文件 (Bypass PowerShell escaping issues completely)
-    - name: Create MSBuild Options File
-      run: |
-        @'
-        /p:Configuration=Release
-        /p:Platform=x64
-        /p:ForceImportBeforeCppTargets="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/msbuild/vcpkg.targets"
-        /p:AdditionalOptions="/wd4996"
-        /p:PreprocessorDefinitions="NDEBUG;_CONSOLE;_UNICODE;UNICODE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS"
-        /p:SdlCheck=false
-        '@ | Out-File -FilePath msbuild_options.rsp -Encoding utf8
-
-    # 3. 使用响应文件编译解决方案
+    # 2. 直接使用 CMD 编译，并通过 CL 环境变量强制给编译器追加屏蔽参数（根治所有 C4996/SDL 报错）
     - name: Build Windows Client (Release x64)
       shell: cmd
+      env:
+        # 这个环境变量会被 MSVC 编译器直接读取，优先级最高且不可被项目配置覆盖
+        CL: /wd4996 /D_CRT_SECURE_NO_WARNINGS /D_WINSOCK_DEPRECATED_NO_WARNINGS
       run: |
-        msbuild client_on_windows/ReverseShell.sln @msbuild_options.rsp
+        msbuild client_on_windows/ReverseShell.sln /p:Configuration=Release /p:Platform=x64 /p:ForceImportBeforeCppTargets="%VCPKG_INSTALLATION_ROOT%/scripts/buildsystems/msbuild/vcpkg.targets"
+
 
 
   # ---- 编译 Linux 服务端 ----
