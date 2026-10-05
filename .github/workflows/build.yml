@@ -43,6 +43,17 @@ jobs:
         msbuild client_on_windows/ReverseShell.sln /p:Configuration=Release /p:Platform=x64 /p:ForceImportBeforeCppTargets="%VCPKG_INSTALLATION_ROOT%/scripts/buildsystems/msbuild/vcpkg.targets"
 
 
+    # 3. 终极产物打包：全盘深度扫描所有生成的 exe 与 dll (解决路径不统一问题)
+    - name: Upload Windows Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-client-binary
+        path: |
+          **/*.exe
+          **/*.dll
+        # 排除掉不需要的系统或打包临时文件
+        exclude-node-modules: true
+
 
   # ---- 编译 Linux 服务端 ----
   build-linux:
