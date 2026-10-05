@@ -1,9 +1,10 @@
-﻿#include <stdio.h>
+﻿#define OPENSSL_SUPPRESS_DEPRECATED 1
+#include <openssl/aes.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h> 
+#include <stdbool.h>
 #include <iostream>
-#include <openssl/aes.h>
 #include <io.h>
 #include <winsock2.h>
 #include <Windows.h>
