@@ -8,34 +8,47 @@ on:
 
 jobs:
   # ---- 编译 Windows 客户端 ----
+  # ---- 编译 Windows 客户端 ----
   build-windows:
     runs-on: windows-2022
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # 1. 安装 OpenSSL 依赖 (针对 x74 架构)
+    # 如果你编译的是 x86，请把下面的 x64-windows 改为 x86-windows
+    - name: Install OpenSSL via vcpkg
+      run: |
+        vcpkg install openssl:x64-windows
+
+    # 2. 整合 vcpkg 到 MSBuild 环境
+    - name: Integrate vcpkg
+      run: |
+        vcpkg integrate install
+
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
     - name: Restore NuGet Packages
       run: |
-        # 如果项目有依赖 NuGet 包，这一步会自动恢复，没有也不影响
         nuget restore client_on_windows/ReverseShell.sln
 
-    - name: Build Windows Client (Release x86)
+    # 3. 编译解决方案 (传入 vcpkg 编译选项，确保 MSBuild 能自动找到 openssl/aes.h)
+    - name: Build Windows Client (Release x64)
       run: |
-        # 直接使用 msbuild 编译解决方案
-        # 根据项目需要，你可以将 x86 改为 x64
-        msbuild client_on_windows/ReverseShell.sln /p:Configuration=Release /p:Platform=x64
+        msbuild client_on_windows/ReverseShell.sln `
+          /p:Configuration=Release `
+          /p:Platform=x64 `
+          /p:ForceImportBeforeCppTargets="\$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/msbuild/vcpkg.targets"
 
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
       with:
         name: windows-client-binary
-        # 收集编译生成的 .exe 文件，过滤掉中间临时文件
         path: |
           client_on_windows/**/Release/*.exe
           client_on_windows/**/Release/*.dll
+
 
   # ---- 编译 Linux 服务端 ----
   build-linux:
