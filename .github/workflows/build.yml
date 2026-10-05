@@ -33,25 +33,22 @@ jobs:
       run: |
         nuget restore client_on_windows/ReverseShell.sln
 
-    # 3. 编译解决方案 (传入 vcpkg 编译选项，确保 MSBuild 能自动找到 openssl/aes.h)
+    # 2. 生成响应文件 (Bypass PowerShell escaping issues completely)
+    - name: Create MSBuild Options File
+      run: |
+        @'
+        /p:Configuration=Release
+        /p:Platform=x64
+        /p:ForceImportBeforeCppTargets="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/msbuild/vcpkg.targets"
+        /p:AdditionalOptions="/wd4996"
+        /p:PreprocessorDefinitions="NDEBUG;_CONSOLE;_UNICODE;UNICODE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS"
+        /p:SdlCheck=false
+        '@ | Out-File -FilePath msbuild_options.rsp -Encoding utf8
+
+    # 3. 使用响应文件编译解决方案
     - name: Build Windows Client (Release x64)
       run: |
-        msbuild client_on_windows/ReverseShell.sln `
-          /p:Configuration=Release `
-          /p:Platform=x64 `
-          /p:ForceImportBeforeCppTargets="`$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/msbuild/vcpkg.targets" `
-          /p:AdditionalOptions="/wd4996" `
-          /p:PreprocessorDefinitions="NDEBUG;_CONSOLE;_UNICODE;UNICODE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS" `
-          /p:SdlCheck=false
-
-
-    - name: Upload Windows Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-client-binary
-        path: |
-          client_on_windows/**/Release/*.exe
-          client_on_windows/**/Release/*.dll
+        msbuild client_on_windows/*.sln @msbuild_options.rsp
 
 
   # ---- 编译 Linux 服务端 ----
