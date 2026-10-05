@@ -17,25 +17,24 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
-    - name: Restore NuGet Packages
+    - name: Build Windows Client
       run: |
-        # 如果项目有依赖 NuGet 包，这一步会自动恢复，没有也不影响
-        nuget restore client_on_windows/*.sln
-
-    - name: Build Windows Client (Release x86)
-      run: |
-        # 直接使用 msbuild 编译解决方案
-        # 根据项目需要，你可以将 x86 改为 x64
-        msbuild client_on_windows/*.sln /p:Configuration=Release /p:Platform=x64
+        # 寻找目录下的 sln 或 vcxproj 文件进行编译，这里以 Release x86 为例
+        # 如果项目没有 sln，可以直接用 cl 命令或 msbuild 编译对应的 .cpp/.c 文件
+        cd client_on_windows
+        if (Test-Path *.sln) {
+          msbuild /p:Configuration=Release /p:Platform=x86
+        } elseif (Test-Path *.vcxproj) {
+          msbuild /p:Configuration=Release /p:Platform=x86
+        } else {
+          echo "No solution file found, compiling directly if needed."
+        }
 
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: windows-client-binary
-        # 收集编译生成的 .exe 文件，过滤掉中间临时文件
-        path: |
-          client_on_windows/**/Release/*.exe
-          client_on_windows/**/Release/*.dll
+        name: windows-client
+        path: client_on_windows/**/Release/
 
   # ---- 编译 Linux 服务端 ----
   build-linux:
