@@ -39,8 +39,10 @@ jobs:
         msbuild client_on_windows/ReverseShell.sln `
           /p:Configuration=Release `
           /p:Platform=x64 `
-          /p:ForceImportBeforeCppTargets="\$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/msbuild/vcpkg.targets"
-          /p:DisableSpecificWarnings="4996"
+          /p:ForceImportBeforeCppTargets="\$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/msbuild/vcpkg.targets" `
+          /p:AdditionalOptions="/wd4996" `
+          /p:PreprocessorDefinitions="NDEBUG;_CONSOLE;_UNICODE;UNICODE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS" `
+          /p:SdlCheck=false
 
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
